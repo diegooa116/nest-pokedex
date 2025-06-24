@@ -11,8 +11,8 @@ import { EnvConfiguration } from './config/env.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      load: [ EnvConfiguration ]
+    ConfigModule.forRoot({ //* Para variables de entorno
+      load: [ EnvConfiguration ],
     }),
     
     ServeStaticModule.forRoot({
