@@ -8,11 +8,13 @@ import { PokemonModule } from './pokemon/pokemon.module';
 import { CommonModule } from './common/common.module';
 import { SeedModule } from './seed/seed.module';
 import { EnvConfiguration } from './config/env.config';
+import { JoinValidationSchema } from './config/joi.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ //* Para variables de entorno
       load: [ EnvConfiguration ],
+      validationSchema: JoinValidationSchema
     }),
     
     ServeStaticModule.forRoot({
