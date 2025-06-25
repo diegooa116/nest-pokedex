@@ -1,28 +1,42 @@
-# Use the official Node.js image as the base image
-FROM node:22-alpine
+# Install dependencies only when needed
+FROM node:22-alpine AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install --frozen-lockfile
 
-# Set the working directory inside the container
-RUN mkdir -p /var/www/pokedex
-WORKDIR /var/www/pokedex
-
-# Copiar el directorio y su contenido
-COPY . ./var/www/pokedex
-COPY package.json tsconfig.json tsconfig.build.json /var/www/pokedex/
-
-# Instalar las dependencias
-RUN npm install --prod
+# Build the app with cache dependencies
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN npm build
 
-# Dar permiso para ejecutar la applicación
-RUN adduser --disabled-password pokeuser
-RUN chown -R pokeuser:pokeuser /var/www/pokedex
-USER pokeuser
 
-# Limpiar el cache
-RUN npm cache clean --force
+# Production image, copy all the files and run next
+FROM node:22-alpine AS runner
 
-# Expose the application port
-EXPOSE 3000
+# Set working directory
+WORKDIR /usr/src/app
 
-# Command to run the application
-CMD ["node", "dist/main"]
+COPY package.json package-lock.json ./
+
+RUN npm install --prod
+
+COPY --from=builder /app/dist ./dist
+
+# # Copiar el directorio y su contenido
+# RUN mkdir -p ./pokedex
+
+# COPY --from=builder ./app/dist/ ./app
+# COPY ./.env ./app/.env
+
+# # Dar permiso para ejecutar la applicación
+# RUN adduser --disabled-password pokeuser
+# RUN chown -R pokeuser:pokeuser ./pokedex
+# USER pokeuser
+
+# EXPOSE 3000
+
+CMD [ "node","dist/main" ]
